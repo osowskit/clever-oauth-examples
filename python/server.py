@@ -1,18 +1,19 @@
 # A sample Clever Instant Login implementation.
-# Uses the Bottle framework and raw HTTP requests to demonstrate the OAuth2 flow.
+# Uses the Bottle framework and raw HTTP requests
+# to demonstrate the OAuth2 flow.
 
 import base64
 import json
 import os
 import requests
 import urllib
-
 from bottle import app, redirect, request, route, run, template
 from beaker.middleware import SessionMiddleware
 
-# Obtain your Client ID and secret from your Clever developer dashboard at https://account.clever.com/partner/applications
 CLIENT_ID = os.environ['CLIENT_ID']
 CLIENT_SECRET = os.environ['CLIENT_SECRET']
+# Obtain your Client ID and secret from your Clever developer dashboard
+# at https://account.clever.com/partner/applications
 
 if 'PORT' in os.environ:
     PORT = os.environ['PORT']
@@ -20,12 +21,14 @@ else:
     PORT = 2587
 
 # Clever redirect URIs must be preregistered on your developer dashboard.
-# If using the default PORT set above, make sure to register "http://localhost:2587/oauth"
 REDIRECT_URI = 'http://localhost:{port}/oauth'.format(port=PORT)
+# If using the default PORT set above, make sure to register
+# "http://localhost:2587/oauth"
 CLEVER_OAUTH_URL = 'https://clever.com/oauth/tokens'
 CLEVER_API_BASE = 'https://api.clever.com'
 
-# Use the bottle session middleware to store an object to represent a "logged in" state.
+# Use the bottle session middleware to store an object to represent
+# a "logged in" state.
 session_opts = {
     'session.type': 'memory',
     'session.cookie_expires': 300,
@@ -40,11 +43,15 @@ def index():
         'response_type': 'code',
         'redirect_uri': REDIRECT_URI,
         'client_id': CLIENT_ID,
-        'scope': 'read:user_id read:sis'        
+        'scope': 'read:user_id read:sis'
     })
-    return template("<h1>Login!<br/><br/> \
+    buttonImage = "http://assets.clever.com/sign-in-with-clever/" + \
+        "sign-in-with-clever-small.png"
+
+    return template(
+        "<h1>Login!<br/><br/> \
         <a href='https://clever.com/oauth/authorize?" + encoded_string +
-        "'><img src='http://assets.clever.com/sign-in-with-clever/sign-in-with-clever-small.png'/></a></h1>"
+        "'><img src='" + buttonImage + "'/></a></h1>"
     )
 
 
@@ -176,7 +183,8 @@ def queryUserName(token):
         return nameObject
 
 
-# Our application logic lives here and is reserved only for users we've authenticated and identified.
+# Our application logic lives here and is reserved only for
+# users we've authenticated and identified.
 @route('/app')
 def app():
     session = request.environ.get('beaker.session')
