@@ -55,6 +55,10 @@ def index():
 def oauth():
     code = request.query.code
 
+    # Redirect User to login screen if code parameter is missing
+    if code == "":
+        return redirect("/")
+ 
     payload = {
         'code': code,
         'grant_type': 'authorization_code',
@@ -67,18 +71,35 @@ def oauth():
         'Content-Type': 'application/json',
     }
 
-    # Don't forget to handle 4xx and 5xx errors!
-    response = requests.post(CLEVER_OAUTH_URL, data=json.dumps(payload), headers=headers).json()
-    token = response['access_token']
+    response = requests.post(CLEVER_OAUTH_URL, data=json.dumps(payload), headers=headers)
 
+    # Don't forget to handle 4xx and 5xx errors!    
+    if response.status_code != 200:
+        return template ("Error authenticating your user.  Please try again. {{message}}.", \
+            message=response.reason)
+    
+    json_response = response.json()
+    token = json_response['access_token']
+    
+    if token is None or token == "":
+        return template ("Authentication failed.  No Oauth token returned from Clever.")
+    
     bearer_headers = {
         'Authorization': 'Bearer {token}'.format(token=token)
     }
 
+    response = requests.get(CLEVER_API_BASE + '/me', headers=bearer_headers)
     # Don't forget to handle 4xx and 5xx errors!
-    result = requests.get(CLEVER_API_BASE + '/me', headers=bearer_headers).json()
+    if response.status_code != 200:
+        return template ("Oauth error using Authorization Token {{message}}.", message=response.reason)
+     
+    result = response.json()
     data = result['data']
 
+    if 'type' not in data:
+        return "Clever endpoint /me missing \'type\'"
+     
+    
     # Only handle student logins for our app (other types include teachers and districts)
     if data['type'] != 'student':
         return template ("You must be a student to log in to this app but you are a {{type}}.", type=data['type'])
